@@ -14,7 +14,7 @@ FLD_SEX = 'Пол'
 FLD_SMOKING = 'Статус курения'
 
 
-FisherConditions = namedtuple('FisherConditions', ['name', 'condition'])
+Conditions = namedtuple('Conditions', ['name', 'condition'])
 
 
 def read_csv(filepath: str) -> pd.DataFrame:
@@ -108,18 +108,25 @@ def get_known_smokers(data: pd.DataFrame):
     return data[data[FLD_SMOKING].str.len() > 0]
 
 
+def has_unknown_smokers(data: pd.DataFrame):
+    return ~(data[FLD_SMOKING].str.len() > 0)
+
+
 def has_no_smokers(data: pd.DataFrame):
-    return data[FLD_SMOKING].str.contains('не ')
+    return data[FLD_SMOKING].str.contains('не кур', na=False)
 
 
 def has_smokers(data: pd.DataFrame):
-    return ~(has_no_smokers(data))
+    return data[FLD_SMOKING].str.contains('кур') & ~has_no_smokers(data)
 
 
-def calc_mann_whitneyu(first_range_name, first_range, second_range_name, second_range):
+def calc_mann_whitneyu(patients, catigories):
+    first_range = patients[catigories[0].condition][FLD_AGE]
+    second_range = patients[catigories[1].condition][FLD_AGE]
+
     statistics, p_value = mannwhitneyu(first_range, second_range)
-    print(f'{first_range_name} ({first_range.size}) и '
-          f'{second_range_name} ({second_range.size}) '
+    print(f'{catigories[0].name} ({first_range.size}) и '
+          f'{catigories[1].name} ({second_range.size}) '
           f'Mann-Whitney U statistic: {statistics}, P-value: {p_value}')
 
 
@@ -162,99 +169,41 @@ def calc_cases_by_age(data: pd.DataFrame, min_age: int, max_age: int) -> None:
     print(f'{min_age}-{max_age}:\t{count} ({get_percentage(count, all)})')
 
 
-def print_with_and_without_mutations(patients):
-    known_smokers = get_known_smokers(patients)
+def print_fisher_men_and_women(patients, catigories):
+    calc_fisher_and_chi2_exact(patients, catigories, [
+        Conditions('Мужчины', has_men(patients)),
+        Conditions('Женщины', has_women(patients))
+    ])
 
-    calc_mann_whitneyu(
-        'С мутациями', patients[has_mutations(patients)][FLD_AGE],
-        'Без мутаций', patients[has_no_mutations(patients)][FLD_AGE]
-    )
+
+def print_fisher_smokers_and_non_smokers(patients, catigories):
+    calc_fisher_and_chi2_exact(patients, catigories, [
+        Conditions('Курящие', has_smokers(patients)),
+        Conditions('Некурящие', has_no_smokers(patients))
+    ])
+
+
+def print_statistics_for_catigories(patients, catigories):
+    calc_mann_whitneyu(patients, catigories)
     print('')
-    calc_fisher_and_chi2_exact(patients,
-                               [
-                                   FisherConditions('Без мутаций', has_no_mutations(patients)),
-                                   FisherConditions('С мутациями', has_mutations(patients))
-                               ],
-                               [
-                                   FisherConditions('Мужчины', has_men(patients)),
-                                   FisherConditions('Женщины', has_women(patients))
-                               ]
-                               )
-    calc_fisher_and_chi2_exact(known_smokers,
-                               [
-                                   FisherConditions('Без мутаций', has_no_mutations(known_smokers)),
-                                   FisherConditions('С мутациями', has_mutations(known_smokers))
-                               ],
-                               [
-                                   FisherConditions('Курят', has_smokers(known_smokers)),
-                                   FisherConditions('Не курят', has_no_smokers(known_smokers))
-                               ]
-                               )
+    print_fisher_men_and_women(patients, catigories)
+    print_fisher_smokers_and_non_smokers(patients, catigories)
     print('')
 
 
-def print_freq_and_rare_mutations(patients):
-    known_smokers = get_known_smokers(patients)
-
-    calc_mann_whitneyu(
-        'Частые', patients[has_freq_mutations(patients)][FLD_AGE],
-        'редкие', patients[has_rare_mutations(patients)][FLD_AGE]
-    )
-    print('')
-    calc_fisher_and_chi2_exact(patients,
-                               [
-                                   FisherConditions('Редкие мутации', has_rare_mutations(patients)),
-                                   FisherConditions('Частые мутаци', has_freq_mutations(patients))
-                               ],
-                               [
-                                   FisherConditions('Мужчины', has_men(patients)),
-                                   FisherConditions('Женщины', has_women(patients))
-                               ]
-                               )
-
-    calc_fisher_and_chi2_exact(known_smokers,
-                               [
-                                   FisherConditions('Редкие мутации', has_rare_mutations(known_smokers)),
-                                   FisherConditions('Частые мутаци', has_freq_mutations(known_smokers))
-                               ],
-                               [
-                                   FisherConditions('Курят', has_smokers(known_smokers)),
-                                   FisherConditions('Не курят', has_no_smokers(known_smokers))
-                               ]
-                               )
-    print('')
-
-
-def print_freq_and_rare_double_mutations(patients):
-    known_smokers = get_known_smokers(patients)
-
-    calc_mann_whitneyu(
-        'Частые', patients[has_freq_mutations(patients)][FLD_AGE],
-        'редкие двойные', patients[has_rare_double_mutations(patients)][FLD_AGE]
-    )
-    print('')
-    calc_fisher_and_chi2_exact(patients,
-                               [
-                                   FisherConditions('Частые мутации', has_freq_mutations(patients)),
-                                   FisherConditions('Редкие двойные мутации', has_rare_double_mutations(patients))
-                               ],
-                               [
-                                   FisherConditions('Мужчины', has_men(patients)),
-                                   FisherConditions('Женщины', has_women(patients))
-                               ]
-                               )
-
-    calc_fisher_and_chi2_exact(known_smokers,
-                               [
-                                   FisherConditions('Частые мутации', has_freq_mutations(known_smokers)),
-                                   FisherConditions('Редкие двойные мутации', has_rare_double_mutations(known_smokers))
-                               ],
-                               [
-                                   FisherConditions('Курят', has_smokers(known_smokers)),
-                                   FisherConditions('Не курят', has_no_smokers(known_smokers))
-                               ]
-                               )
-    print('')
+def print_statistics(patients):
+    print_statistics_for_catigories(patients, [
+        Conditions('Без мутаций', has_no_mutations(patients)),
+        Conditions('С мутациями', has_mutations(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Редкие мутации', has_rare_mutations(patients)),
+        Conditions('Частые мутаци', has_freq_mutations(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('Редкие двойные мутации', has_rare_double_mutations(patients))
+    ])
 
 
 def print_cases_rare_by_ages(title, patients):
@@ -274,10 +223,9 @@ def print_cases_rare_by_ages(title, patients):
     print(f'Мужчины: {men} ({get_percentage(men, total_count)}')
     print(f'Женщины: {women} ({get_percentage(women, total_count)})')
 
-    known_smokers = get_known_smokers(patients)
-    smokers = known_smokers[has_smokers(known_smokers)].shape[0]
-    non_smokers = known_smokers[has_no_smokers(known_smokers)].shape[0]
-    unknown_smokers = total_count - known_smokers.shape[0]
+    smokers = patients[has_smokers(patients)].shape[0]
+    non_smokers = patients[has_no_smokers(patients)].shape[0]
+    unknown_smokers = patients[has_unknown_smokers(patients)].shape[0]
     print(f'Курящие: {smokers} ({get_percentage(smokers, total_count)}')
     print(f'Некурящие: {non_smokers} ({get_percentage(non_smokers, total_count)})')
     print(f'Неизвестно: {unknown_smokers} ({get_percentage(unknown_smokers, total_count)})')
@@ -302,9 +250,7 @@ def print_cases_by_ages(patients):
 def main() -> None:
     patients = read_csv(CSV_PATH)
 
-    print_with_and_without_mutations(patients)
-    print_freq_and_rare_mutations(patients)
-    print_freq_and_rare_double_mutations(patients)
+    print_statistics(patients)
     print_cases_by_ages(patients)
 
 
