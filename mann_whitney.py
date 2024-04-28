@@ -16,6 +16,7 @@ FLD_SMOKING = 'Статус курения'
 
 FisherConditions = namedtuple('FisherConditions', ['name', 'condition'])
 
+
 def read_csv(filepath: str) -> pd.DataFrame:
     data = pd.read_csv(filepath, sep=SEPARATOR)
     return data[data[FLD_AGE] > 1]
@@ -258,7 +259,9 @@ def print_freq_and_rare_double_mutations(patients):
 
 def print_cases_rare_by_ages(title, patients):
     total_count = patients.shape[0]
-    print(f'{title} - Медиана: {patients[FLD_AGE].mean()}')
+    patient_ages = patients[FLD_AGE]
+    print(f'{title} - Медиана: {patient_ages.mean()}, '
+          f'Диапазон: ({patient_ages.min()}-{patient_ages.max()})')
 
     calc_cases_by_age(patients, 0, 40)
     calc_cases_by_age(patients, 41, 50)
