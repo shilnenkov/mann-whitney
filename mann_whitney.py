@@ -54,6 +54,22 @@ def is_d761y(data: pd.DataFrame):
     return data[FLD_EGFR_TYPE].str.contains('D761Y')
 
 
+def is_ex20ins(data: pd.DataFrame):
+    return data[FLD_EGFR_TYPE].str.contains('ex20ins')
+
+
+def is_g719x(data: pd.DataFrame):
+    return data[FLD_EGFR_TYPE].str.contains('G719')
+
+
+def is_l861q(data: pd.DataFrame):
+    return data[FLD_EGFR_TYPE].str.contains('L861Q')
+
+
+def is_e709x(data: pd.DataFrame):
+    return data[FLD_EGFR_TYPE].str.contains('E709')
+
+
 def is_double_mutations(data: pd.DataFrame):
     return data[FLD_EGFR_TYPE].str.contains(re.escape('+'))
 
@@ -130,16 +146,19 @@ def calc_fisher_and_chi2_exact(patients, catigories, groups):
     print(f'chi^2 stat: {chi2_statistic}, p_value: {p_value}')
 
 
-def mutation_destrib_by_ages(data: pd.DataFrame, min_age: int, max_age: int, title: str) -> None:
-    is_greater_than_min_age = data[FLD_AGE] > min_age
+def get_percentage(count, total_count):
+    return f'{count / total_count * 100.0:.2f}%'
+
+
+def calc_cases_by_age(data: pd.DataFrame, min_age: int, max_age: int) -> None:
+    is_greater_or_eq_min_age = data[FLD_AGE] > min_age
     is_less_or_eq_max_age = data[FLD_AGE] <= max_age
-    age_condition = is_greater_than_min_age & is_less_or_eq_max_age
+    age_condition = is_greater_or_eq_min_age & is_less_or_eq_max_age
 
     all = data[FLD_AGE].size
-    count = data[age_condition][FLD_AGE].size
-    percent = count / all * 100.0
+    count = data[age_condition].shape[0]
 
-    print(f'{title}: {min_age}-{max_age}: {count}/{all} ({percent:.2f}%)')
+    print(f'{min_age}-{max_age}:\t{count} ({get_percentage(count, all)})')
 
 
 def print_with_and_without_mutations(patients):
@@ -237,12 +256,53 @@ def print_freq_and_rare_double_mutations(patients):
     print('')
 
 
+def print_cases_rare_by_ages(title, patients):
+    total_count = patients.shape[0]
+    print(f'{title} - Медиана: {patients[FLD_AGE].mean()}')
+
+    calc_cases_by_age(patients, 0, 40)
+    calc_cases_by_age(patients, 41, 50)
+    calc_cases_by_age(patients, 51, 60)
+    calc_cases_by_age(patients, 61, 70)
+    calc_cases_by_age(patients, 70, 999)
+
+    men = patients[has_men(patients)].shape[0]
+    women = patients[has_women(patients)].shape[0]
+    print(f'Мужчины: {men} ({get_percentage(men, total_count)}')
+    print(f'Женщины: {women} ({get_percentage(women, total_count)})')
+
+    known_smokers = get_known_smokers(patients)
+    smokers = known_smokers[has_smokers(known_smokers)].shape[0]
+    non_smokers = known_smokers[has_no_smokers(known_smokers)].shape[0]
+    unknown_smokers = total_count - known_smokers.shape[0]
+    print(f'Курящие: {smokers} ({get_percentage(smokers, total_count)}')
+    print(f'Некурящие: {non_smokers} ({get_percentage(non_smokers, total_count)})')
+    print(f'Неизвестно: {unknown_smokers} ({get_percentage(unknown_smokers, total_count)})')
+
+    print(f'Всего: {total_count}')
+    print('')
+
+
+def print_cases_by_ages(patients):
+    print('Наиболее часто встречающиеся случаи редких мутаций гена EGFR')
+    print_cases_rare_by_ages('Редкие', patients[has_rare_mutations(patients)])
+    print_cases_rare_by_ages('ex20ins', patients[is_ex20ins(patients)])
+    print_cases_rare_by_ages('G719X', patients[is_g719x(patients)])
+    print_cases_rare_by_ages('L861Q', patients[is_l861q(patients)])
+    print_cases_rare_by_ages('S768I', patients[is_s768i(patients)])
+    print_cases_rare_by_ages('E709X', patients[is_e709x(patients)])
+    print_cases_rare_by_ages('ex19del', patients[is_ex19del(patients)])
+    print_cases_rare_by_ages('L858R', patients[is_l858r(patients)])
+    print('')
+
+
 def main() -> None:
     patients = read_csv(CSV_PATH)
 
     print_with_and_without_mutations(patients)
     print_freq_and_rare_mutations(patients)
     print_freq_and_rare_double_mutations(patients)
+    print_cases_by_ages(patients)
 
 
 if __name__ == '__main__':
