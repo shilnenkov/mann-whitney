@@ -151,7 +151,7 @@ def get_percentage(count, total_count):
 
 
 def calc_cases_by_age(data: pd.DataFrame, min_age: int, max_age: int) -> None:
-    is_greater_or_eq_min_age = data[FLD_AGE] > min_age
+    is_greater_or_eq_min_age = data[FLD_AGE] >= min_age
     is_less_or_eq_max_age = data[FLD_AGE] <= max_age
     age_condition = is_greater_or_eq_min_age & is_less_or_eq_max_age
 
@@ -264,7 +264,7 @@ def print_cases_rare_by_ages(title, patients):
     calc_cases_by_age(patients, 41, 50)
     calc_cases_by_age(patients, 51, 60)
     calc_cases_by_age(patients, 61, 70)
-    calc_cases_by_age(patients, 70, 999)
+    calc_cases_by_age(patients, 71, 999)
 
     men = patients[has_men(patients)].shape[0]
     women = patients[has_women(patients)].shape[0]
