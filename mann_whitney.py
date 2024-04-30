@@ -185,15 +185,18 @@ def get_percentage(count, total_count):
     return f'{count / total_count * 100.0:.2f}%'
 
 
-def calc_cases_by_age(data: pd.DataFrame, min_age: int, max_age: int) -> None:
-    is_greater_or_eq_min_age = data[FLD_AGE] >= min_age
-    is_less_or_eq_max_age = data[FLD_AGE] <= max_age
+def calc_cases_by_age(patients, condition, total_count_condition, min_age, max_age):
+    filtered_patients = patients[condition]
+
+    is_greater_or_eq_min_age = filtered_patients[FLD_AGE] >= min_age
+    is_less_or_eq_max_age = filtered_patients[FLD_AGE] <= max_age
     age_condition = is_greater_or_eq_min_age & is_less_or_eq_max_age
 
-    all = data[FLD_AGE].size
-    count = data[age_condition].shape[0]
+    total_count = patients[total_count_condition].shape[0]
+    count = filtered_patients[age_condition].shape[0]
 
-    print(f'{min_age}-{max_age}:\t{count} ({get_percentage(count, all)})')
+    print(f'{count} {total_count}')
+    print(f'{min_age}-{max_age}:\t{count} ({get_percentage(count, total_count)})')
 
 
 def print_fisher_men_and_women(patients, catigories):
@@ -267,44 +270,51 @@ def print_statistics(patients):
     ])
 
 
-def print_cases_rare_by_ages(title, patients):
-    total_count = patients.shape[0]
-    patient_ages = patients[FLD_AGE]
-    print(f'{title} - Медиана: {patient_ages.mean()}, '
+def print_cases_rare_by_ages(title, patients, condition, total_count_condition):
+    filtered_patients = patients[condition]
+    patient_ages = filtered_patients[FLD_AGE]
+    print(f'{title} - Медиана: {patient_ages.median()}, '
           f'Диапазон: ({patient_ages.min()}-{patient_ages.max()})')
 
-    calc_cases_by_age(patients, 0, 40)
-    calc_cases_by_age(patients, 41, 50)
-    calc_cases_by_age(patients, 51, 60)
-    calc_cases_by_age(patients, 61, 70)
-    calc_cases_by_age(patients, 71, 999)
+    calc_cases_by_age(patients, condition, total_count_condition, 0, 40)
+    calc_cases_by_age(patients, condition, total_count_condition, 41, 50)
+    calc_cases_by_age(patients, condition, total_count_condition, 51, 60)
+    calc_cases_by_age(patients, condition, total_count_condition, 61, 70)
+    calc_cases_by_age(patients, condition, total_count_condition, 71, 999)
 
-    men = patients[has_men(patients)].shape[0]
-    women = patients[has_women(patients)].shape[0]
-    print(f'Мужчины: {men} ({get_percentage(men, total_count)}')
-    print(f'Женщины: {women} ({get_percentage(women, total_count)})')
+    men = filtered_patients[has_men(filtered_patients)].shape[0]
+    total_men = patients[total_count_condition & has_men(patients)].shape[0]
+    women = filtered_patients[has_women(filtered_patients)].shape[0]
+    total_women = patients[total_count_condition & has_women(patients)].shape[0]
+    print(f'Мужчины: {men} ({get_percentage(men, total_men)}')
+    print(f'Женщины: {women} ({get_percentage(women, total_women)})')
 
-    smokers = patients[has_smokers(patients)].shape[0]
-    non_smokers = patients[has_no_smokers(patients)].shape[0]
-    unknown_smokers = patients[has_unknown_smokers(patients)].shape[0]
-    print(f'Курящие: {smokers} ({get_percentage(smokers, total_count)}')
-    print(f'Некурящие: {non_smokers} ({get_percentage(non_smokers, total_count)})')
-    print(f'Неизвестно: {unknown_smokers} ({get_percentage(unknown_smokers, total_count)})')
+    smokers = filtered_patients[has_smokers(filtered_patients)].shape[0]
+    total_smokers = patients[total_count_condition & has_smokers(patients)].shape[0]
+    non_smokers = filtered_patients[has_no_smokers(filtered_patients)].shape[0]
+    total_non_smokers = patients[total_count_condition & has_no_smokers(patients)].shape[0]
+    unknown_smokers = filtered_patients[has_unknown_smokers(filtered_patients)].shape[0]
+    total_unknown_smokers = patients[total_count_condition & has_no_smokers(patients)].shape[0]
+    print(f'Курящие: {smokers} ({get_percentage(smokers, total_smokers)}')
+    print(f'Некурящие: {non_smokers} ({get_percentage(non_smokers, total_non_smokers)})')
+    print(f'Неизвестно: {unknown_smokers} ({get_percentage(unknown_smokers, total_unknown_smokers)})')
 
-    print(f'Всего: {total_count}')
+    condition_count = filtered_patients.shape[0]
+    total_count = patients[total_count_condition].shape[0]
+    print(f'Всего: {condition_count} ({get_percentage(condition_count, total_count)})')
     print('')
 
 
 def print_cases_by_ages(patients):
     print('Наиболее часто встречающиеся случаи редких мутаций гена EGFR')
-    print_cases_rare_by_ages('Редкие', patients[has_rare_mutations(patients)])
-    print_cases_rare_by_ages('ex20ins', patients[is_ex20ins(patients)])
-    print_cases_rare_by_ages('G719X', patients[is_g719x(patients)])
-    print_cases_rare_by_ages('L861Q', patients[is_l861q(patients)])
-    print_cases_rare_by_ages('S768I', patients[is_s768i(patients)])
-    print_cases_rare_by_ages('E709X', patients[is_e709x(patients)])
-    print_cases_rare_by_ages('ex19del', patients[is_ex19del(patients)])
-    print_cases_rare_by_ages('L858R', patients[is_l858r(patients)])
+    total_condition = has_rare_mutations(patients) | is_ex20ins(patients) | is_g719x(patients) | \
+                      is_l861q(patients) | is_s768i(patients) | is_e709x(patients)
+    print_cases_rare_by_ages('Редкие', patients, has_rare_mutations(patients), total_condition)
+    print_cases_rare_by_ages('ex20ins', patients, is_ex20ins(patients), total_condition)
+    print_cases_rare_by_ages('G719X', patients, is_g719x(patients), total_condition)
+    print_cases_rare_by_ages('L861Q', patients, is_l861q(patients), total_condition)
+    print_cases_rare_by_ages('S768I', patients, is_s768i(patients), total_condition)
+    print_cases_rare_by_ages('E709X', patients, is_e709x(patients), total_condition)
     print('')
 
 
@@ -351,7 +361,7 @@ def main() -> None:
     patients = read_csv(CSV_PATH)
 
     print_statistics(patients)
-    # print_cases_by_ages(patients)
+    print_cases_by_ages(patients)
     print_shapiro(patients)
     show_plots(patients)
     plt.show()
