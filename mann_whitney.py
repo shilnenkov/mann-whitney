@@ -1,7 +1,8 @@
-import pandas as pd
 import os
 import re
-from scipy.stats import mannwhitneyu, chi2_contingency, fisher_exact
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import mannwhitneyu, chi2_contingency, fisher_exact, shapiro
 from collections import namedtuple
 
 SEPARATOR = ';'
@@ -128,6 +129,22 @@ def calc_mann_whitneyu(patients, catigories):
     print(f'{catigories[0].name} ({first_range.size}) и '
           f'{catigories[1].name} ({second_range.size}) '
           f'Mann-Whitney U statistic: {statistics}, P-value: {p_value}')
+
+
+def calc_shapiro(patients, category):
+    patients_by_age = patients[category.condition][FLD_AGE]
+    statistics, p_value = shapiro(patients_by_age)
+
+    print(f'Шапиро-Уилко: {category.name} '
+          f'Test statistic: {statistics}, P-value: {p_value}')
+
+
+def plot_distributions(patients, categories):
+    plots = {category.name: patients[category.condition][FLD_AGE] for category in categories}
+
+    distributions_by_age = pd.DataFrame(plots)
+    ax = distributions_by_age.plot(kind='box')
+    ax.grid(axis='y')
 
 
 def calc_fisher_and_chi2_exact(patients, catigories, groups):
@@ -285,11 +302,53 @@ def print_cases_by_ages(patients):
     print('')
 
 
+def print_shapiro(patients):
+    calc_shapiro(patients, Conditions('Есть мутации', has_mutations(patients)))
+    calc_shapiro(patients, Conditions('Без мутаций', has_no_mutations(patients)))
+    calc_shapiro(patients, Conditions('Частые мутации', has_freq_mutations(patients)))
+    calc_shapiro(patients, Conditions('Редкие мутации', has_rare_mutations(patients)))
+
+    calc_shapiro(patients, Conditions('Редкие двойные мутации', has_rare_double_mutations(patients)))
+    calc_shapiro(patients, Conditions('ex20', is_ex20ins(patients)))
+    calc_shapiro(patients, Conditions('G719X', is_g719x(patients)))
+    calc_shapiro(patients, Conditions('L861Q', is_l861q(patients)))
+    calc_shapiro(patients, Conditions('S768I', is_s768i(patients)))
+    calc_shapiro(patients, Conditions('E709X', is_e709x(patients)))
+
+
+def show_plots(patients):
+    plot_distributions(patients, [
+        Conditions('Есть мутации', has_mutations(patients)),
+        Conditions('Без мутаций', has_no_mutations(patients))
+    ])
+    plot_distributions(patients, [
+        Conditions('Частые мутации', has_freq_mutations(patients)),
+        Conditions('Редкие мутации', has_rare_mutations(patients)),
+    ])
+    plot_distributions(patients, [
+        Conditions('Частые мутации', has_freq_mutations(patients)),
+        Conditions('Редкие двойные мутации', has_rare_double_mutations(patients)),
+    ])
+    plot_distributions(patients, [
+        Conditions('Частые мутации', has_freq_mutations(patients)),
+        Conditions('ex20', is_ex20ins(patients)),
+        Conditions('G719X', is_g719x(patients)),
+        Conditions('L861Q', is_l861q(patients)),
+        Conditions('S768I', is_s768i(patients)),
+        Conditions('E709X', is_e709x(patients)),
+    ])
+
+    plt.show()
+
+
 def main() -> None:
     patients = read_csv(CSV_PATH)
 
     print_statistics(patients)
-    print_cases_by_ages(patients)
+    # print_cases_by_ages(patients)
+    print_shapiro(patients)
+    show_plots(patients)
+    plt.show()
 
 
 if __name__ == '__main__':
