@@ -143,9 +143,19 @@ def calc_fisher_and_chi2_exact(patients, catigories, groups):
 
     table = [group_1, group_2]
 
-    print(f'\t\t{catigories[0].name}\t{catigories[1].name}\n'
-          f'{groups[0].name}\t{group_1[0]} | {group_1[1]}\n'
-          f'{groups[1].name}\t{group_2[0]} | {group_2[1]}')
+    total_first_condition = patients[catigories[0].condition].shape[0]
+    total_second_condition = patients[catigories[1].condition].shape[0]
+
+    percentage_1st_condition_1st_group = get_percentage(group_1[0], total_first_condition)
+    percentage_1st_condition_2st_group = get_percentage(group_2[0], total_first_condition)
+    percentage_2st_condition_1st_group = get_percentage(group_1[1], total_second_condition)
+    percentage_2st_condition_2st_group = get_percentage(group_2[1], total_second_condition)
+
+    print(f'\t\t{catigories[0].name} | {catigories[1].name}\n'
+          f'{groups[0].name}\t{group_1[0]} ({percentage_1st_condition_1st_group}) | '
+          f'{group_1[1]} ({percentage_2st_condition_1st_group})\n'
+          f'{groups[1].name}\t{group_2[0]} ({percentage_1st_condition_2st_group}) | '
+          f'{group_2[1]} ({percentage_2st_condition_2st_group})')
 
     odds_ratio, p_value = fisher_exact(table)
     print(f'Фишер: Odds ratio: {odds_ratio}, p_value: {p_value}')
