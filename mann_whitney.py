@@ -214,6 +214,34 @@ def print_statistics(patients):
         Conditions('Частые мутаци', has_freq_mutations(patients)),
         Conditions('Редкие двойные мутации', has_rare_double_mutations(patients))
     ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('ex20', is_ex20ins(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('G719X', is_g719x(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('L861Q', is_l861q(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('S768I', is_s768i(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('E709X', is_e709x(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('ex19del', is_ex19del(patients))
+    ])
+    print_statistics_for_catigories(patients, [
+        Conditions('Частые мутаци', has_freq_mutations(patients)),
+        Conditions('L858R', is_l858r(patients))
+    ])
 
 
 def print_cases_rare_by_ages(title, patients):
