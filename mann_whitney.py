@@ -160,13 +160,13 @@ def calc_fisher_and_chi2_exact(patients, catigories, groups):
 
     table = [group_1, group_2]
 
-    total_first_condition = patients[catigories[0].condition].shape[0]
-    total_second_condition = patients[catigories[1].condition].shape[0]
+    total_first_group = patients[groups[0].condition].shape[0]
+    total_second_group = patients[groups[1].condition].shape[0]
 
-    percentage_1st_condition_1st_group = get_percentage(group_1[0], total_first_condition)
-    percentage_1st_condition_2st_group = get_percentage(group_2[0], total_first_condition)
-    percentage_2st_condition_1st_group = get_percentage(group_1[1], total_second_condition)
-    percentage_2st_condition_2st_group = get_percentage(group_2[1], total_second_condition)
+    percentage_1st_condition_1st_group = get_percentage(group_1[0], total_first_group)
+    percentage_2st_condition_1st_group = get_percentage(group_1[1], total_first_group)
+    percentage_1st_condition_2st_group = get_percentage(group_2[0], total_second_group)
+    percentage_2st_condition_2st_group = get_percentage(group_2[1], total_second_group)
 
     print(f'\t\t{catigories[0].name} | {catigories[1].name}\n'
           f'{groups[0].name}\t{group_1[0]} ({percentage_1st_condition_1st_group}) | '
@@ -203,11 +203,17 @@ def print_fisher_men_and_women(patients, catigories):
     ])
 
 
-def print_fisher_smokers_and_non_smokers(patients, catigories):
-    calc_fisher_and_chi2_exact(patients, catigories, [
+def print_fisher_smokers_and_non_smokers(patients, categories):
+    calc_fisher_and_chi2_exact(patients, categories, [
         Conditions('Курящие', has_smokers(patients)),
         Conditions('Некурящие', has_no_smokers(patients))
     ])
+
+    first_category_unknown = patients[categories[0].condition & has_unknown_smokers(patients)].shape[0]
+    second_category_unknown = patients[categories[1].condition & has_unknown_smokers(patients)].shape[0]
+    total_unknown = patients[has_unknown_smokers(patients)].shape[0]
+    print(f'Неизвестно {first_category_unknown} ({get_percentage(first_category_unknown, total_unknown)}) | '
+          f'{second_category_unknown} ({get_percentage(second_category_unknown, total_unknown)})')
 
 
 def print_statistics_for_catigories(patients, catigories):
